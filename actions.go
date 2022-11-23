@@ -84,7 +84,7 @@ func (n *Notifier) NotifyWarnE(warnAt, description, warnString string) error {
 		return errors.New("❌ Slack warn config not found or not properly configured")
 	}
 
-	err := n.sendOnSlack(warnString, errorColor, n.config.Warn,
+	err := n.sendOnSlack(warnString, warnColor, n.config.Warn,
 		slack.AttachmentField{Title: "WarnAt", Value: warnAt},
 		slack.AttachmentField{Title: "Description", Value: description})
 	if err != nil {
