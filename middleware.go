@@ -54,7 +54,7 @@ func ExceptionHandlerMiddleware(next http.Handler) http.Handler {
 				// print stack trace as well
 				fmt.Println(stackTrace)
 				w.WriteHeader(http.StatusInternalServerError)
-				NotifyError("Exception Handler Middleware Recovery", "", fmt.Sprintf("%v", err), "Request", string(body), "Stack Trace", stackTrace)
+				NotifyError("Exception Handler Middleware Recovery", "Check stack trace above", fmt.Sprintf("%v\n%s", err, stackTrace), "Request", string(body))
 			}
 		}()
 
