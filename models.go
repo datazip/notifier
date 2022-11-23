@@ -9,5 +9,5 @@ type Config struct {
 
 type SlackChannelConfig struct {
 	ChannelID string   `yaml:"id"`
-	Mentions  []string `yaml:"mentions"` // mentions are expected to have @ included before usernames
+	Mentions  []string `yaml:"mentions"` // mentions are expected to have @ excluded before usernames
 }

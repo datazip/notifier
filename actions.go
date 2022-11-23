@@ -150,7 +150,7 @@ func isConfigured(channelConfig *SlackChannelConfig) bool {
 func generateMentions(users []string) string {
 	str := ""
 	for _, user := range users {
-		str += fmt.Sprintf("<%s> ", user)
+		str += fmt.Sprintf("<@%s> ", user)
 	}
 
 	return str
