@@ -30,9 +30,9 @@ func (rw *customResponseWriter) Write(content []byte) (int, error) {
 	return rw.ResponseWriter.Write(content)
 }
 
-// ExceptionHandlerMiddlware is a handlers which notfies on slack if any exceptions are encounters in
+// ExceptionHandlerMiddleware is a handlers which notfies on slack if any exceptions are encounters in
 // http requests such as status code >= 400
-func ExceptionHandlerMiddlware(next http.Handler) http.Handler {
+func ExceptionHandlerMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// create custom router
 		rw := NewResponseWriter(w)
@@ -44,19 +44,29 @@ func ExceptionHandlerMiddlware(next http.Handler) http.Handler {
 			return
 		}
 
+		// setup recovery
+		defer func() {
+			err := recover()
+			if err != nil {
+				// capture stacks trace
+				stackTrace := string(debug.Stack())
+				logrus.Error(err) // May be log this error?
+				// print stack trace as well
+				fmt.Println(stackTrace)
+				w.WriteHeader(http.StatusInternalServerError)
+				NotifyError("Exception Handler Middleware Recovery", "", fmt.Sprintf("%v", err), "Request", string(body), "Stack Trace", stackTrace)
+			}
+		}()
+
 		// clone request and send it ahead
 		cloneRequest := r.Clone(r.Context())
 		cloneRequest.Body = io.NopCloser(bytes.NewReader(body))
 		next.ServeHTTP(rw, cloneRequest)
 
-		description := fmt.Sprintf("StatusCode: %d\nRequest body: %s", rw.statusCode, string(body))
+		description := fmt.Sprintf("failed request with StatusCode: %d", rw.statusCode)
 
 		if rw.statusCode >= 500 {
-			if debug.Stack() != nil && string(debug.Stack()) != "" {
-				NotifyError("Exception Handler Middleware Error", description, fmt.Sprintf("Response: %s\nStack Trace: \n%s", string(rw.response), string(debug.Stack())))
-			} else {
-				NotifyError("Exception Handler Middleware Error", description, fmt.Sprintf("Response: %s", string(rw.response)))
-			}
+			NotifyError("Exception Handler Middleware Error", description, "", "url", r.RequestURI, "Response", string(rw.response), "Request", string(body))
 		} else if rw.statusCode >= 400 {
 			NotifyWarn("Exception Handler Middleware Warn", description, fmt.Sprintf("Response: %s", string(rw.response)))
 		}

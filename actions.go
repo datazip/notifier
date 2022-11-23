@@ -10,51 +10,64 @@ import (
 )
 
 // Notify error logs on Slack
-func (n *Notifier) NotifyError(errorAt, description, errString string) {
-	if err := n.NotifyErrorE(errorAt, description, errString); err != nil {
+func (n *Notifier) NotifyError(errorAt, description, errString string, fields ...string) {
+	if err := n.NotifyErrorE(errorAt, description, errString, fields...); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	logrus.Info("✅ Error log reported on slack at %s", time.Now())
+	logrus.Info("🔴 Error log reported on slack at %s", time.Now())
 }
 
 // Notify success logs on Slack
-func (n *Notifier) NotifySuccess(successAt, description, successString string) {
-	if err := n.NotifySuccessE(successAt, description, successString); err != nil {
+func (n *Notifier) NotifySuccess(successAt, description, successString string, fields ...string) {
+	if err := n.NotifySuccessE(successAt, description, successString, fields...); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	logrus.Info("✅ Success log reported on slack at %s", time.Now())
+	logrus.Info("🟢 Success log reported on slack at %s", time.Now())
 }
 
 // Notify success logs on Slack
-func (n *Notifier) NotifyWarn(warnAt, description, warnString string) {
-	if err := n.NotifyWarnE(warnAt, description, warnString); err != nil {
+func (n *Notifier) NotifyWarn(warnAt, description, warnString string, fields ...string) {
+	if err := n.NotifyWarnE(warnAt, description, warnString, fields...); err != nil {
 		logrus.Error(err)
 		return
 	}
 
-	logrus.Info("✅ Success log reported on slack at %s", time.Now())
+	logrus.Info("🟡 Warn log reported on slack at %s", time.Now())
 }
 
 // Notify error logs on Slack and returns error
-func (n *Notifier) NotifyErrorE(errorAt, description, errString string) error {
+func (n *Notifier) NotifyErrorE(errorAt, description, errString string, fields ...string) error {
 	if !isConfigured(n.config.Error) {
 		return errors.New("❌ Slack error config not found or not properly configured")
 	}
+
+	if len(fields)%2 != 0 {
+		return errors.New("❌ Invalid number of fields passed, only even number of fields allowed")
+	}
+
+	attachmentFields := []slack.AttachmentField{
+		{Title: "ErrorAt", Value: errorAt},
+		{Title: "Description", Value: description},
+	}
+
+	for i := 0; i < len(fields); i += 2 {
+		attachmentFields = append(attachmentFields, slack.AttachmentField{
+			Title: fields[i],
+			Value: fields[i+1],
+		})
+	}
+
 	if len(errString) < 4000 {
-		err := n.sendOnSlack(errString, errorColor, n.config.Error,
-			slack.AttachmentField{Title: "ErrorAt", Value: errorAt},
-			slack.AttachmentField{Title: "Description", Value: description})
+		err := n.sendOnSlack(errString, errorColor, n.config.Error, attachmentFields...)
 		if err != nil {
 			return fmt.Errorf("❌ Failed to report error on slack: %s", err)
 		}
 	} else {
-		err := n.sendOnSlackAsFile(errString, errorColor, n.config.Error,
-			slack.AttachmentField{Title: "ErrorAt", Value: errorAt},
-			slack.AttachmentField{Title: "Description", Value: description})
+		err := n.sendOnSlackAsFile(errString, errorColor, n.config.Error, attachmentFields...)
 		if err != nil {
 			return fmt.Errorf("❌ Failed to report error on slack: %s", err)
 		}
@@ -64,13 +77,28 @@ func (n *Notifier) NotifyErrorE(errorAt, description, errString string) error {
 }
 
 // Notify success logs on Slack and returns error
-func (n *Notifier) NotifySuccessE(successAt, description, successString string) error {
+func (n *Notifier) NotifySuccessE(successAt, description, successString string, fields ...string) error {
 	if !isConfigured(n.config.Success) {
 		return errors.New("❌ Slack success config not found or not properly configured")
 	}
-	err := n.sendOnSlack(successString, successColor, n.config.Success,
-		slack.AttachmentField{Title: "SuccessAt", Value: successAt},
-		slack.AttachmentField{Title: "Description", Value: description})
+
+	if len(fields)%2 != 0 {
+		return errors.New("❌ Invalid number of fields passed, only even number of fields allowed")
+	}
+
+	attachmentFields := []slack.AttachmentField{
+		{Title: "SuccessAt", Value: successAt},
+		{Title: "Description", Value: description},
+	}
+
+	for i := 0; i < len(fields); i += 2 {
+		attachmentFields = append(attachmentFields, slack.AttachmentField{
+			Title: fields[i],
+			Value: fields[i+1],
+		})
+	}
+
+	err := n.sendOnSlack(successString, successColor, n.config.Success, attachmentFields...)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to report success on slack: %s", err)
 	}
@@ -79,14 +107,28 @@ func (n *Notifier) NotifySuccessE(successAt, description, successString string) 
 }
 
 // Notify warn logs on Slack
-func (n *Notifier) NotifyWarnE(warnAt, description, warnString string) error {
+func (n *Notifier) NotifyWarnE(warnAt, description, warnString string, fields ...string) error {
 	if !isConfigured(n.config.Warn) {
 		return errors.New("❌ Slack warn config not found or not properly configured")
 	}
 
-	err := n.sendOnSlack(warnString, warnColor, n.config.Warn,
-		slack.AttachmentField{Title: "WarnAt", Value: warnAt},
-		slack.AttachmentField{Title: "Description", Value: description})
+	if len(fields)%2 != 0 {
+		return errors.New("❌ Invalid number of fields passed, only even number of fields allowed")
+	}
+
+	attachmentFields := []slack.AttachmentField{
+		{Title: "WarnAt", Value: warnAt},
+		{Title: "Description", Value: description},
+	}
+
+	for i := 0; i < len(fields); i += 2 {
+		attachmentFields = append(attachmentFields, slack.AttachmentField{
+			Title: fields[i],
+			Value: fields[i+1],
+		})
+	}
+
+	err := n.sendOnSlack(warnString, warnColor, n.config.Warn, attachmentFields...)
 	if err != nil {
 		return fmt.Errorf("❌ Failed to report warn on slack: %s", err)
 	}
