@@ -109,7 +109,7 @@ func (n *Notifier) sendOnSlackAsFile(text, messageColor string, channelConfig *S
 
 	_, err = n.slackClient.UploadFile(fileattachment)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to upload file : %s", err)
 	}
 
 	return nil
@@ -131,7 +131,7 @@ func (n *Notifier) sendOnSlack(text, messageColor string, channelConfig *SlackCh
 		slack.MsgOptionAttachments(attachment),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send message : %s", err)
 	}
 
 	return nil
