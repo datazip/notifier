@@ -44,6 +44,12 @@ func (m *Mailer) newSession() (*session.Session, error) {
 
 }
 
+func (m *Mailer) NotifyEmail(subject string, fromEmail string, recipient Recipient, template string, args ...interface{}) {
+	if err := standardMailer.NotifyEmailE(subject, fromEmail, recipient, template, args...); err != nil {
+		logrus.Error("failed to send email : %s", err)
+	}
+}
+
 // NotifyEmailE sends email to specified email IDs
 func (m *Mailer) NotifyEmailE(subject string, fromEmail string, recipient Recipient, template string, args ...interface{}) error {
 	msgBody, err := getHTMLTemplate(template, args...)
@@ -123,6 +129,8 @@ func (m *Mailer) NotifyEmailE(subject string, fromEmail string, recipient Recipi
 	return nil
 }
 
+// Experimental Feature
+//
 // NotifyRawEmailE sends email to specified email IDs with attachments
 func (m *Mailer) NotifyRawEmailE(subject string, fromEmail string, recipient Recipient, attachments []string, template string, args ...interface{}) error {
 	// create new AWS session
